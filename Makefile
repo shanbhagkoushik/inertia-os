@@ -9,8 +9,8 @@ LDFLAGS := -nostdlib -z max-page-size=0x1000
 BUILD   := build
 KERNEL  := $(BUILD)/kernel.elf
 
-SRC_S  := boot/multiboot2_header.s kernel/entry.s
-SRC_C  := kernel/kmain.c
+SRC_S  := boot/multiboot2_header.s kernel/entry.s kernel/isr64.s
+SRC_C  := kernel/kmain.c kernel/idt.c kernel/pic.c kernel/pit.c kernel/ps2.c kernel/gfx.c
 
 OBJ    := $(patsubst %.s,$(BUILD)/%.o,$(SRC_S)) $(patsubst %.c,$(BUILD)/%.o,$(SRC_C))
 
@@ -22,7 +22,12 @@ $(BUILD)/boot/%.o: boot/%.s
 
 $(BUILD)/kernel/%.o: kernel/%.s
 	@mkdir -p $(dir $@)
-	clang -c $< -o $@ -m32
+	# isr64.s is 64-bit; entry.s is 32-bit
+	if [ "$(notdir $<)" = "isr64.s" ]; then \
+	  clang -c $< -o $@ ; \
+	else \
+	  clang -c $< -o $@ -m32 ; \
+	fi
 
 $(BUILD)/kernel/%.o: kernel/%.c
 	@mkdir -p $(dir $@)
